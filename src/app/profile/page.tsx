@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { Save, User } from 'lucide-react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { Save, User, CheckCircle, AlertCircle, Wallet } from 'lucide-react';
+import { useUserManagement } from '@/hooks/useUserManagement';
+import LoginPrompt from '../components/LoginPrompt';
 
 // Define the user data type
 type UserData = {
@@ -14,9 +15,17 @@ type UserData = {
 };
 
 export default function Profile() {
-  const { authenticated } = usePrivy();
-  const { wallets } = useWallets();
-  const walletAddress = wallets?.[0]?.address;
+  const {
+    authenticated,
+    smartAccountAddress,
+    offChainUserData,
+    userOnChainData,
+    isRegisteredOnChain,
+    updateProfile,
+    isLoading: userManagementLoading,
+    error: userManagementError,
+    getUserRole
+  } = useUserManagement();
   
   const [formData, setFormData] = useState<UserData>({
     nombre: '',
@@ -26,45 +35,27 @@ export default function Profile() {
     lugarResidencia: '',
     fechaNacimiento: '',
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  // Fetch user data when wallet address changes
+  // Load user data when off-chain data is available
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!walletAddress) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/users?wallet=${walletAddress}`);
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData) {
-            // Convert date to format expected by input[type="date"]
-            const formattedDate = userData.fechaNacimiento 
-              ? new Date(userData.fechaNacimiento).toISOString().split('T')[0]
-              : '';
-            
-            setFormData({
-              nombre: userData.nombre || '',
-              apellido: userData.apellido || '',
-              email: userData.email || '',
-              telefono: userData.telefono || '',
-              lugarResidencia: userData.lugarResidencia || '',
-              fechaNacimiento: formattedDate,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [walletAddress]);
+    if (offChainUserData) {
+      // Convert date to format expected by input[type="date"]
+      const formattedDate = offChainUserData.fechaNacimiento 
+        ? new Date(offChainUserData.fechaNacimiento).toISOString().split('T')[0]
+        : '';
+      
+      setFormData({
+        nombre: offChainUserData.nombre || '',
+        apellido: offChainUserData.apellido || '',
+        email: offChainUserData.email || '',
+        telefono: offChainUserData.telefono || '',
+        lugarResidencia: offChainUserData.lugarResidencia || '',
+        fechaNacimiento: formattedDate,
+      });
+    }
+  }, [offChainUserData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -72,45 +63,63 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!walletAddress) return;
+    if (!smartAccountAddress) return;
+
+    setIsLoading(true);
+    setSaveMessage(null);
 
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          wallet: walletAddress,
-          owner: walletAddress,
-          fechaNacimiento: new Date(formData.fechaNacimiento).toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save profile');
-      }
-
-      alert('Profile saved successfully!');
-    } catch (error) {
+      const updatedData = {
+        ...formData,
+        fechaNacimiento: new Date(formData.fechaNacimiento).toISOString(),
+      };
+      
+      await updateProfile(updatedData);
+      setSaveMessage('Profile updated successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      alert('Error saving profile');
+      setSaveMessage('Error saving profile: ' + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (!authenticated) {
+    return <LoginPrompt />;
+  }
+
+  const userRole = getUserRole();
+  const isPsychologist = userRole === 'psm';
+
+  if (userManagementLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">Please connect your wallet to view and edit your profile</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#635BFF] mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading profile data...</p>
+        </div>
       </div>
     );
   }
 
-  if (isLoading) {
+  // Show registration prompt if user has no profile data
+  if (!smartAccountAddress) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">Loading profile data...</p>
+      <div className="space-y-8 px-4 py-8" style={{ background: 'linear-gradient(135deg, #f7f7f8 0%, #e0c3fc 100%)', minHeight: '100vh' }}>
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl shadow-lg p-8 bg-white text-center">
+            <Wallet className="w-16 h-16 text-[#635BFF] mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 mb-4" style={{ fontFamily: 'Jura, Arial, Helvetica, sans-serif' }}>
+              Connect Your Wallet
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Please connect your smart wallet to access your profile.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -126,10 +135,72 @@ export default function Profile() {
                 <User className="w-8 h-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold" style={{ fontFamily: 'Jura, Arial, Helvetica, sans-serif', color: '#222' }}>Your Profile</h2>
-                <p className="text-[#635BFF] font-medium" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>{walletAddress ? walletAddress.slice(0, 8) + '...' : ''}</p>
+                <h2 className="text-2xl font-bold" style={{ fontFamily: 'Jura, Arial, Helvetica, sans-serif', color: '#222' }}>
+                  {isPsychologist ? 'Therapist Profile' : 'Patient Profile'}
+                </h2>
+                <p className="text-[#635BFF] font-medium" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
+                  {smartAccountAddress ? smartAccountAddress.slice(0, 8) + '...' + smartAccountAddress.slice(-6) : ''}
+                </p>
+                {isRegisteredOnChain && (
+                  <div className="flex items-center mt-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-1" />
+                    <span className="text-sm text-green-600">Verified on blockchain</span>
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Status Messages */}
+            {saveMessage && (
+              <div className={`mb-6 p-4 rounded-lg border ${
+                saveMessage.includes('Error') 
+                  ? 'bg-red-50 border-red-200 text-red-800'
+                  : 'bg-green-50 border-green-200 text-green-800'
+              }`}>
+                <div className="flex items-center">
+                  {saveMessage.includes('Error') 
+                    ? <AlertCircle className="w-5 h-5 mr-2" />
+                    : <CheckCircle className="w-5 h-5 mr-2" />
+                  }
+                  {saveMessage}
+                </div>
+              </div>
+            )}
+            
+            {userManagementError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center text-red-800">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  {userManagementError}
+                </div>
+              </div>
+            )}
+            
+            {/* Registration Status Information */}
+            {!offChainUserData && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center text-blue-800">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <div>
+                    <p className="font-medium">No profile data found</p>
+                    <p className="text-sm text-blue-600">You may need to register first. This form will create your profile when you save it.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {offChainUserData && !isRegisteredOnChain && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center text-yellow-800">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <div>
+                    <p className="font-medium">Profile incomplete</p>
+                    <p className="text-sm text-yellow-600">Your profile exists but needs blockchain verification to access all platform features.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-400 text-sm font-medium mb-2">First Name</label>
@@ -208,11 +279,12 @@ export default function Profile() {
 
             <button 
               type="submit"
-              className="mt-8 w-full rounded-full bg-[#635BFF] hover:bg-[#7d4875] text-white py-3 px-4 font-bold flex items-center justify-center space-x-2 transition"
+              disabled={isLoading || !formData.nombre || !formData.apellido}
+              className="mt-8 w-full rounded-full bg-[#635BFF] hover:bg-[#7d4875] disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 px-4 font-bold flex items-center justify-center space-x-2 transition"
               style={{ fontFamily: 'Jura, Arial, Helvetica, sans-serif' }}
             >
               <Save className="w-4 h-4" />
-              <span>Save Changes</span>
+              <span>{isLoading ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </form>

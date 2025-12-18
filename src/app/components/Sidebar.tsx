@@ -1,20 +1,40 @@
 import Link from 'next/link'
-import { Home, Users, Wallet, User, CreditCard, Settings } from 'lucide-react';
+import { Home, Users, Wallet, User, CreditCard, Settings, Calendar, Star, FileCheck, UserPlus } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { useUserManagement } from '@/hooks/useUserManagement';
 
-const navItems = [
+// Navigation items for Users (Patients)
+const userNavItems = [
   { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/psms', icon: Users, label: 'Browse PSMs' },
+  { path: '/psms', icon: Users, label: 'Find Therapist' },
+  { path: '/sessions', icon: Calendar, label: 'My Sessions' },
   { path: '/wallet', icon: Wallet, label: 'Wallet' },
-  { path: '/current-hire', icon: User, label: 'Current Hire' },
+  { path: '/current-hire', icon: User, label: 'My Therapist' },
   { path: '/payments', icon: CreditCard, label: 'Payments' },
   { path: '/profile', icon: Settings, label: 'Profile' },
-  {path:"/psms-register",icon:Users,label:"PSM Management"}
+];
+
+// Navigation items for PSMs (Therapists)
+const psmNavItems = [
+  { path: '/', icon: Home, label: 'Dashboard' },
+  { path: '/certifications', icon: FileCheck, label: 'Certification' },
+  { path: '/sessions', icon: Calendar, label: 'My Sessions' },
+  { path: '/wallet', icon: Wallet, label: 'Wallet' },
+  { path: '/psms-register', icon: UserPlus, label: 'PSM Management' },
+  { path: '/payments', icon: CreditCard, label: 'Payments' },
+  { path: '/profile', icon: Settings, label: 'Profile' },
 ];
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
   const pathname = usePathname();
+  const { offChainUserData, getUserRole } = useUserManagement();
+  
+  // Determine which nav items to show based on user role
+  const userRole = getUserRole();
+  const isPSM = offChainUserData?.isPSM || userRole === 'PSM';
+  const navItems = isPSM ? psmNavItems : userNavItems;
+  
   // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (open) {

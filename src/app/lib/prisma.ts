@@ -1,5 +1,5 @@
 // lib/prisma.ts
-import { PrismaClient } from '@/generated/prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 declare global {
   // avoid re-instantiating in dev

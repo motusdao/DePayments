@@ -1,53 +1,154 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-
 model PSM {
-  id                        String     @id @default(uuid()) @map("ID")
-  horarioEnvio              DateTime   @map("Horario de envío")
-  nombre                    String     @map("Nombre")
-  apellido                  String     @map("Apellido")
-  email                     String     @map("Email")
-  fechaNacimiento           DateTime   @map("Fecha de nacimiento")
-  telefono                  String     @map("Teléfono")
-  lugarResidencia           String     @map("Lugar de residencia")
-  // …all your other fields…
-  createdDate               DateTime   @map("Created Date")
-  updatedDate               DateTime   @map("Updated Date")
-  owner                     String     @map("Owner")
-
-  usuarios                  Usuario[]  // ← back-relation
+  id                     String          @id @default(uuid()) @map("ID")
+  horarioEnvio           DateTime        @map("Horario de envío")
+  nombre                 String          @map("Nombre")
+  apellido               String          @map("Apellido")
+  email                  String          @unique @map("Email")
+  fechaNacimiento        DateTime        @map("Fecha de nacimiento")
+  telefono               String          @map("Teléfono")
+  lugarResidencia        String          @map("Lugar de residencia")
+  createdDate            DateTime        @map("Created Date")
+  updatedDate            DateTime        @map("Updated Date")
+  owner                  String          @map("Owner")
+  activo                 Boolean         @default(false) @map("Activo")
+  experienciaAnios       Int             @map("Años de Experiencia")
+  biografia              String?         @map("Biografía")
+  certificado            Boolean         @default(false) @map("Certificado")
+  cedulaProfesional      String          @map("Cédula Profesional")
+  disponible             Boolean         @default(true) @map("Disponible")
+  especialidades         String[]        @map("Especialidades")
+  estatusPago            String          @default("pendiente") @map("Estatus Pago")
+  fechaCertificacion     DateTime?       @map("Fecha Certificación")
+  formacionAcademica     String          @map("Formación Académica")
+  foto                   String?         @map("Foto URL")
+  participaComunidad     Boolean         @default(false) @map("Participa Comunidad")
+  participaCursos        Boolean         @default(false) @map("Participa Cursos")
+  participaInvestigacion Boolean         @default(false) @map("Participa Investigación")
+  participaSupervision   Boolean         @default(false) @map("Participa Supervisión")
+  reputacionPuntos       Int             @default(0) @map("Puntos Reputación")
+  totalIngresos          Decimal         @default(0) @map("Total Ingresos")
+  totalSesiones          Int             @default(0) @map("Total Sesiones")
+  certificaciones        Certificacion[]
+  evaluaciones           Evaluacion[]
+  recompensas            Recompensa[]
+  sesiones               Sesion[]
+  usuarios               Usuario[]
 }
 
 model Usuario {
-  id                        String     @id @default(uuid()) @map("ID")
-  horarioEnvio              DateTime   @map("Horario de envío")
-  nombre                    String     @map("Nombre")
-  apellido                  String     @map("Apellido")
-  email                     String     @map("Email")
-  fechaNacimiento           DateTime   @map("Fecha de nacimiento")
-  telefono                  String     @map("Teléfono")
-  lugarResidencia           String     @map("Lugar de residencia")
-  createdDate               DateTime   @map("Created Date")
-  updatedDate               DateTime   @map("Updated Date")
-  owner                     String     @map("Owner")
+  id                    String       @id @default(uuid()) @map("ID")
+  horarioEnvio          DateTime     @map("Horario de envío")
+  nombre                String       @map("Nombre")
+  apellido              String       @map("Apellido")
+  email                 String       @unique @map("Email")
+  fechaNacimiento       DateTime     @map("Fecha de nacimiento")
+  telefono              String       @map("Teléfono")
+  lugarResidencia       String       @map("Lugar de residencia")
+  createdDate           DateTime     @map("Created Date")
+  updatedDate           DateTime     @map("Updated Date")
+  owner                 String       @map("Owner")
+  currentPsmId          String?
+  wallet                String?      @unique @map("Wallet")
+  estatusProceso        String       @default("registrado") @map("Estatus Proceso")
+  modalidadPago         String?      @map("Modalidad Pago")
+  montoPago             Decimal?     @map("Monto Pago")
+  preferenciaAsignacion String       @default("automatica") @map("Preferencia Asignación")
+  problematicaPrincipal String?      @map("Problemática Principal")
+  sesionesCompletadas   Int          @default(0) @map("Sesiones Completadas")
+  tipoAtencion          String?      @map("Tipo Atención")
+  evaluaciones          Evaluacion[] @relation("UsuarioEvaluaciones")
+  recompensas           Recompensa[]
+  sesiones              Sesion[]
+  currentPsm            PSM?         @relation(fields: [currentPsmId], references: [id])
+}
 
-  currentPsmId              String?    
-  currentPsm                PSM?       @relation(fields: [currentPsmId], references: [id])
+model Sesion {
+  id                 String      @id @default(uuid()) @map("ID")
+  usuarioId          String      @map("Usuario ID")
+  psmId              String      @map("PSM ID")
+  fechaSesion        DateTime    @map("Fecha Sesión")
+  duracionMinutos    Int         @default(50) @map("Duración Minutos")
+  tipoSesion         String      @default("individual") @map("Tipo Sesión")
+  estado             String      @default("programada") @map("Estado")
+  montoCobrado       Decimal?    @map("Monto Cobrado")
+  comisionPlataforma Decimal?    @map("Comisión Plataforma")
+  metodoPago         String?     @map("Método Pago")
+  notasSesion        String?     @map("Notas Sesión")
+  createdDate        DateTime    @default(now()) @map("Created Date")
+  updatedDate        DateTime    @updatedAt @map("Updated Date")
+  evaluacion         Evaluacion?
+  psm                PSM         @relation(fields: [psmId], references: [id])
+  usuario            Usuario     @relation(fields: [usuarioId], references: [id])
+}
 
-  // 🆕 Add wallet field
-  wallet                    String?    @unique @map("Wallet")
+model Evaluacion {
+  id                   String   @id @default(uuid()) @map("ID")
+  sesionId             String   @unique @map("Sesión ID")
+  usuarioId            String   @map("Usuario ID")
+  psmId                String   @map("PSM ID")
+  calificacionServicio Int      @map("Calificación Servicio")
+  calificacionPsm      Int      @map("Calificación PSM")
+  comentario           String?  @map("Comentario")
+  recomendaria         Boolean  @map("Recomendaría")
+  createdDate          DateTime @default(now()) @map("Created Date")
+  psm                  PSM      @relation(fields: [psmId], references: [id])
+  sesion               Sesion   @relation(fields: [sesionId], references: [id])
+  usuario              Usuario  @relation("UsuarioEvaluaciones", fields: [usuarioId], references: [id])
+}
+
+model Certificacion {
+  id                String    @id @default(uuid()) @map("ID")
+  psmId             String    @map("PSM ID")
+  tipoCertificacion String    @map("Tipo Certificación")
+  documentoUrl      String    @map("Documento URL")
+  estado            String    @default("pendiente") @map("Estado")
+  fechaVencimiento  DateTime? @map("Fecha Vencimiento")
+  montoActivacion   Decimal   @default(65) @map("Monto Activación")
+  pagado            Boolean   @default(false) @map("Pagado")
+  fechaPago         DateTime? @map("Fecha Pago")
+  createdDate       DateTime  @default(now()) @map("Created Date")
+  updatedDate       DateTime  @updatedAt @map("Updated Date")
+  psm               PSM       @relation(fields: [psmId], references: [id])
+}
+
+model Recompensa {
+  id             String   @id @default(uuid()) @map("ID")
+  receptorId     String   @map("Receptor ID")
+  tipoReceptor   String   @map("Tipo Receptor")
+  tipoRecompensa String   @map("Tipo Recompensa")
+  puntos         Int      @map("Puntos")
+  descripcion    String   @map("Descripción")
+  relacionadoId  String?  @map("Relacionado ID")
+  createdDate    DateTime @default(now()) @map("Created Date")
+  psm            PSM?     @relation(fields: [receptorId], references: [id], map: "RecompensaPSM")
+  usuario        Usuario? @relation(fields: [receptorId], references: [id], map: "RecompensaUsuario")
+}
+
+model Newsletter {
+  id          String   @id @default(uuid()) @map("ID")
+  email       String   @unique @map("Email")
+  nombre      String?  @map("Nombre")
+  origen      String   @default("web") @map("Origen")
+  activo      Boolean  @default(true) @map("Activo")
+  createdDate DateTime @default(now()) @map("Created Date")
+}
+
+model ConfiguracionPlataforma {
+  id          String   @id @default(uuid()) @map("ID")
+  clave       String   @unique @map("Clave")
+  valor       String   @map("Valor")
+  tipo        String   @map("Tipo")
+  descripcion String?  @map("Descripción")
+  updatedDate DateTime @updatedAt @map("Updated Date")
 }

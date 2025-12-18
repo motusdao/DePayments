@@ -9,13 +9,26 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@farcaster/frame-sdk": "^0.1.8",
+    "@neynar/react": "^1.2.7",
     "@prisma/client": "^6.9.0",
     "@privy-io/react-auth": "^2.16.0",
+    "@selfxyz/contracts": "^1.2.0",
+    "@selfxyz/core": "^1.0.6",
+    "@selfxyz/qrcode": "^1.0.10-beta.1",
+    "@transak/transak-sdk": "^3.2.0",
+    "@zerodev/ecdsa-validator": "^5.4.9",
+    "@zerodev/sdk": "^5.4.40",
+    "ethers": "^6.15.0",
     "lucide-react": "^0.522.0",
     "next": "15.3.3",
+    "ox": "^0.6.12",
+    "permissionless": "^0.2.49",
     "prisma": "^6.9.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "viem": "^2.31.7",
+    "ox": "^0.6.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

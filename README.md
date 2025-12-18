@@ -1,4 +1,10 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Motus Payment App UX
+
+This is the frontend application for the Motus payment system built with [Next.js](https://nextjs.org) and bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Related Projects
+
+- **Smart Contracts**: `/Users/cesarangulo/documents/celo/motus-contracts/` - Contains all the Solidity smart contracts for the Motus system.
 
 ## Getting Started
 
